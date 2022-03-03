@@ -125,3 +125,23 @@ func ParseResponses(filename string, standup *geekbotclient.Standup) []*geekbotc
 	}
 	return responses
 }
+
+func PrintQuestionAnswers(client *geekbotclient.GeekbotClient, qas []*geekbotclient.QuestionAnswer) error {
+	report, err := client.QuestionAnswersToJson(qas)
+	if err != nil {
+		return err
+	}
+	PrintJson(report)
+	return nil
+}
+
+func ConfirmAndSend(client *geekbotclient.GeekbotClient, qas []*geekbotclient.QuestionAnswer) (bool, error) {
+	if err := PrintQuestionAnswers(client, qas); err != nil {
+		return false, err
+	}
+	if !ConfirmPrompt("Confirm and send? [y/n]: ") {
+		return false, nil
+	}
+	err := client.CreateReport(qas)
+	return err == nil, err
+}

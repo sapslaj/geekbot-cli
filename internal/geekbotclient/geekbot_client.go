@@ -12,7 +12,10 @@ import (
 	"os"
 )
 
-const apiTokenEnvironmentVariable = "GEEKBOT_API_KEY"
+const (
+	apiHostname                 = "https://api.geekbot.com"
+	apiTokenEnvironmentVariable = "GEEKBOT_API_KEY"
+)
 
 type GeekbotClient struct {
 	Ctx      context.Context
@@ -58,7 +61,7 @@ func (c *GeekbotClient) newRequest(method, path string, body io.Reader) (*http.R
 	if path[0] != '/' {
 		path = "/" + path
 	}
-	req, err := http.NewRequest(method, "https://api.geekbot.com"+path, body)
+	req, err := http.NewRequest(method, apiHostname+path, body)
 	if err != nil {
 		return req, err
 	}
@@ -118,11 +121,18 @@ func (c *GeekbotClient) QuestionAnswersToJson(qas []*QuestionAnswer) ([]byte, er
 	return json.Marshal(data)
 }
 
-func (c *GeekbotClient) CreateReport(qas []*QuestionAnswer) (*http.Request, error) {
+func (c *GeekbotClient) CreateReport(qas []*QuestionAnswer) error {
 	body, err := c.QuestionAnswersToJson(qas)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	fmt.Println(string(body))
-	return c.newV1Request("POST", "/reports", bytes.NewBuffer(body))
+	req, err := c.newV1Request("POST", "/reports", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	if req.Response.StatusCode < 200 && req.Response.StatusCode >= 300 {
+		return errors.New("report failed to send")
+	}
+	return nil
 }
