@@ -16,7 +16,7 @@ import (
 
 func Qr(question string) string {
 	// qr = question render, ie convert template variables to plain English
-	question = strings.ReplaceAll(question, "{last_report_date}", "last report date")
+	question = strings.ReplaceAll(question, "{last_report_date}", "your last report date")
 	return question
 }
 
