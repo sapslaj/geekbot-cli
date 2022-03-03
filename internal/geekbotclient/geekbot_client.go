@@ -76,11 +76,19 @@ func (c *GeekbotClient) newV1Request(method, path string, body io.Reader) (*http
 	return c.newRequest(method, "/v1"+path, body)
 }
 
-func (c *GeekbotClient) jsonResponse(req *http.Request, v interface{}) (*http.Response, []byte, error) {
+func (c *GeekbotClient) rawResponse(req *http.Request) (*http.Response, error) {
 	if req == nil {
-		return nil, nil, errors.New("GeekbotClient.jsonResponse: request is nil")
+		return nil, errors.New("GeekbotClient.jsonResponse: request is nil")
 	}
 	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *GeekbotClient) jsonResponse(req *http.Request, v interface{}) (*http.Response, []byte, error) {
+	resp, err := c.rawResponse(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +139,14 @@ func (c *GeekbotClient) CreateReport(qas []*QuestionAnswer) error {
 	if err != nil {
 		return err
 	}
-	if req.Response.StatusCode < 200 && req.Response.StatusCode >= 300 {
+	resp, err := c.rawResponse(req)
+	if err != nil {
+		return err
+	}
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+	if resp.StatusCode < 200 && resp.StatusCode >= 300 {
 		return errors.New("report failed to send")
 	}
 	return nil
