@@ -56,7 +56,7 @@ func (sf *SteppedFlow) Run(steps []string) {
 		switch s {
 		case "start":
 			sf.MustHaveFileName()
-			fmt.Println("Standup can be edited at " + sf.Filename)
+			fmt.Println(sf.Filename)
 		case "edit":
 			sf.MustHaveFileName()
 			OpenEditor(sf.Filename)
