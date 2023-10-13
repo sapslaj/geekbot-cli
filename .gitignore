@@ -1,4 +1,5 @@
 build/
+/geekbot-cli
 
 # Created by https://www.toptal.com/developers/gitignore/api/go,linux,macos,windows,dotenv
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,linux,macos,windows,dotenv
