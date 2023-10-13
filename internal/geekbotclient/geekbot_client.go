@@ -17,6 +17,15 @@ const (
 	apiTokenEnvironmentVariable = "GEEKBOT_API_KEY"
 )
 
+type ReportCreateAnswer struct {
+	Text string `json:"text"`
+}
+
+type ReportCreate struct {
+	StandupID int                           `json:"standup_id"`
+	Answers   map[string]ReportCreateAnswer `json:"answers"`
+}
+
 type GeekbotClient struct {
 	Ctx      context.Context
 	ApiToken *string
@@ -66,6 +75,7 @@ func (c *GeekbotClient) newRequest(method, path string, body io.Reader) (*http.R
 		return req, err
 	}
 	req.Header.Add("Authorization", *c.ApiToken)
+	req.Header.Add("Content-Type", "application/json")
 	return req, nil
 }
 
@@ -117,13 +127,14 @@ func (c *GeekbotClient) QuestionAnswersToJson(qas []*QuestionAnswer) ([]byte, er
 	// Geekbots API is kinda terrible. Mismatched types, no consistent structure
 	// or schema, bad documentation, etc. Geekbot devs, if you see this, please
 	// contact me. I don't want to shit talk your work.
-	data := map[string]interface{}{
-		"standup_id": fmt.Sprintf("%d", qas[0].Standup.Id),
-		"answers":    map[string]map[string]string{},
+	data := ReportCreate{
+		// StandupID: fmt.Sprintf("%d", qas[0].Standup.Id),
+		StandupID: qas[0].Standup.Id,
+		Answers:   make(map[string]ReportCreateAnswer),
 	}
 	for _, qa := range qas {
-		data["answers"].(map[string]map[string]string)[fmt.Sprintf("%d", qa.Question.Id)] = map[string]string{
-			"text": qa.Answer,
+		data.Answers[fmt.Sprintf("%d", qa.Question.Id)] = ReportCreateAnswer{
+			Text: qa.Answer,
 		}
 	}
 	return json.Marshal(data)
@@ -146,7 +157,9 @@ func (c *GeekbotClient) CreateReport(qas []*QuestionAnswer) error {
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-	if resp.StatusCode < 200 && resp.StatusCode >= 300 {
+	rbody, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		fmt.Println(rbody)
 		return errors.New("report failed to send")
 	}
 	return nil
